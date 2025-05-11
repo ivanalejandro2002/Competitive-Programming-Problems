@@ -14,108 +14,80 @@ typedef vector<vll> vvll;
 typedef pair<int,int> pii;
 typedef vector<pii> vpii;
 typedef vector<vpii> vvpii;
-struct nodo{
-    int valor;
-    bool iniciado;
-    nodo *arriba;
-    nodo *abajo;
-    nodo(int v):valor(v),iniciado(1),arriba(nullptr),abajo(nullptr){};
-};
-int numeral(string &cad, int &i,int acum){
-    if(i>=cad.size() || cad[i]<'0' || cad[i]>'9'){
-        i++;
-        return acum;
+
+bool verify(int u, int v, vpii &cima){
+    while(u!=-1 && v!=u)u=cima[u].fi;
+    return u!=v;
+}
+
+void query(bool move, bool onto, vpii &cima, int u, int v){
+    if(!verify(u,v,cima))return;
+    if(!verify(v,u,cima))return;
+    if(!onto){
+        while(cima[v].fi!=-1)v = cima[v].fi;
     }
-    acum*=10;
-    acum+=cad[i]-'0';
-    i++;
-    return numeral(cad,i,acum);
-}
-pair<bool,int> posicion(string &cad, int &i){
-    if(cad[i+1]=='n'){
-        i+=5;
-        int lugar = numeral(cad,i,0);
-        return {0,lugar};
-    }else if(cad[i+1]=='v'){
-        i+=5;
-        int lugar = numeral(cad,i,0);
-        return {1,lugar};
+
+    int x = v;
+
+    int d;
+    while(x!=-1){
+        d = cima[x].fi;
+        cima[x].fi = -1;
+        x = d;
+        if(x!=-1)cima[x].se=-1;
     }
-    return {0,0};
-}
-void resetea(nodo * bloque, vi &quePila){
-    if(bloque==nullptr)return;
-    bloque->iniciado = 1;
-    quePila[bloque->valor]=bloque->valor;
-    bloque->abajo = nullptr;
-    resetea(bloque->arriba,quePila);
-    bloque->arriba = nullptr;
-}
-void interpreta(string &cad, int &i,vector<nodo *> &posiciones, vi &quePila){
-    if(cad[i]=='m'){
-        i+=5;
-        int origen = numeral(cad,i,0);
-        nodo *bInicio = posiciones[origen];
-        pair<bool,int> coso = posicion(cad,i);
-        nodo *bDestino = posiciones[coso.second];
-        if(quePila[origen]==quePila[coso.second])return;
-        resetea(bInicio->arriba,quePila);
-        bInicio->arriba = nullptr;
 
-        if(coso.first)
-            while(bDestino->arriba!=nullptr)bDestino = bDestino->arriba;
-        resetea(bDestino->arriba,quePila);
-        bDestino->arriba = nullptr;
-
-        if(bInicio->abajo!=nullptr)bInicio->abajo->arriba = nullptr;
-        bDestino->arriba = bInicio;
-        bInicio->abajo = bDestino;
-        bInicio->iniciado = 0;
-        quePila[origen] = quePila[coso.second];
-    }else if(cad[i]=='p'){
-        i+=5;
-        int origen = numeral(cad,i,0);
-        nodo *bInicio = posiciones[origen];
-        pair<bool,int> coso = posicion(cad,i);
-        nodo *bDestino = posiciones[coso.second];
-        if(quePila[origen]==quePila[coso.second])return;
-
-        if(coso.first)
-            while(bDestino->arriba!=nullptr)bDestino = bDestino->arriba;
-        resetea(bDestino->arriba,quePila);
-        bDestino->arriba = nullptr;
-
-        if(bInicio->abajo!=nullptr)bInicio->abajo->arriba = nullptr;
-        bDestino->arriba = bInicio;
-        bInicio->abajo = bDestino;
-        bInicio->iniciado = 0;
-        quePila[origen] = quePila[coso.second];
+    if(move){
+        x = u;
+        while(x!=-1){
+            d = cima[x].fi;
+            cima[x].fi=-1;
+            x = d;
+            if(x!=-1)cima[x].se=-1;
+        }
     }
+
+    cima[v].fi = u;
+    if(cima[u].se!=-1)cima[cima[u].se].fi=-1;
+    cima[u].se = v;
+
 }
-void imprime(nodo *bloque){
-    if(bloque==nullptr)return;
-    cout<<" "<<bloque->valor;
-    imprime(bloque->arriba);
-}
+
 void solve(){
     int n;
     cin>>n;
-    vector<nodo *> posiciones(n);
-    vector<int> quePila(n);
-    for(int i=0;i<n;i++)quePila[i]=i;
-    for(int i=0;i<n;i++)posiciones[i]=new nodo(i);
+    
+    vpii cima(n,{-1,-1});
+
     string cad;
-    getline(cin,cad);
+
+    int u,v;
+    bool move;
+    bool onto;
+
     do{
-        getline(cin,cad);
-        if(cad=="quit")break;
-        int i = 0;
-        interpreta(cad,i,posiciones,quePila);
-    }while(cad!="quit");
+        cin>>cad;
+        if(cad[0]=='q')break;
+
+        move = cad[0] == 'm';
+        cin>>u;
+
+        cin>>cad;
+        onto = cad.back()=='o';
+        cin>>v;
+
+        query(move,onto,cima,u,v);
+    }while(cad[0]!='q');
+
+    int x;
     for(int i=0;i<n;i++){
         cout<<i<<":";
-        if(posiciones[i]->iniciado){
-            imprime(posiciones[i]);
+        if(cima[i].se==-1){
+            x = i;
+            while(x!=-1){
+                cout<<" "<<x;
+                x = cima[x].fi;
+            }
         }
         cout<<"\n";
     }
